@@ -1,0 +1,23 @@
+{
+  "name": "oil-stock-book",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Oil Stock Book & Issue/Receive Tracking System — Edward & Christie (Pvt) Ltd",
+  "scripts": {
+    "setup": "npm install && npm --prefix client install && npm --prefix client run build",
+    "import": "node scripts/import.js",
+    "build": "npm --prefix client run build",
+    "start": "node server/index.js",
+    "server": "node --watch server/index.js",
+    "dev": "concurrently -n server,client -c blue,green \"node --watch server/index.js\" \"npm --prefix client run dev\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
