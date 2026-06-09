@@ -38,7 +38,7 @@ export function consumerLabel(row) {
 }
 
 export const TXN_SELECT = `
-  SELECT t.*, p.name AS product_name, p.unit AS unit,
+  SELECT t.*, p.name AS product_name, p.unit AS unit, p.category AS category,
          a.ec_code AS asset_ec, a.registration AS asset_reg, a.type AS asset_type, a.brand AS asset_brand,
          pr.name AS project_name
   FROM transactions t

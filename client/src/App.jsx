@@ -6,6 +6,7 @@ import ProductDetail from './pages/ProductDetail.jsx';
 import Machines from './pages/Machines.jsx';
 import AssetDetail from './pages/AssetDetail.jsx';
 import Projects from './pages/Projects.jsx';
+import ProjectDetail from './pages/ProjectDetail.jsx';
 import Trends from './pages/Trends.jsx';
 import Mapping from './pages/Mapping.jsx';
 import Settings from './pages/Settings.jsx';
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/machines" element={<Machines />} />
               <Route path="/machines/:id" element={<AssetDetail />} />
               <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/trends" element={<Trends />} />
               <Route path="/mapping" element={<Mapping />} />
               <Route path="/settings" element={<Settings />} />
