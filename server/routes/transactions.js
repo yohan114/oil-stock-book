@@ -23,6 +23,8 @@ router.get('/', h((req, res) => {
   if (from)        { where.push('t.txn_date >= @from'); args.from = from; }
   if (to)          { where.push('t.txn_date <= @to'); args.to = to; }
   if (q)           { where.push('(t.description LIKE @q OR t.mr_no LIKE @q OR t.mtn_no LIKE @q)'); args.q = `%${q}%`; }
+  // Project managers only ever see the materials they personally issued.
+  if (req.user.role === 'manager') { where.push('t.user_id = @selfId'); args.selfId = req.user.id; }
   const w = where.join(' AND ');
   const total = db.prepare(`SELECT COUNT(*) AS n FROM transactions t WHERE ${w}`).get(args).n;
   const rows = db.prepare(

@@ -14,11 +14,17 @@ function scopeWhere(user) {
   return '1';
 }
 
+// Managers' totals reflect only the materials they personally issued.
+function ownIssueFilter(user) {
+  return user.role === 'manager' ? ` AND user_id = ${Number(user.id)}` : '';
+}
+
 router.get('/', h((req, res) => {
+  const f = ownIssueFilter(req.user);
   const rows = db.prepare(`
     SELECT pr.*,
-      (SELECT COALESCE(SUM(qty_issued),0) FROM transactions WHERE project_id=pr.id AND voided=0 AND kind='issue') AS total_qty,
-      (SELECT COUNT(*) FROM transactions WHERE project_id=pr.id AND voided=0 AND kind='issue') AS txn_count,
+      (SELECT COALESCE(SUM(qty_issued),0) FROM transactions WHERE project_id=pr.id AND voided=0 AND kind='issue'${f}) AS total_qty,
+      (SELECT COUNT(*) FROM transactions WHERE project_id=pr.id AND voided=0 AND kind='issue'${f}) AS txn_count,
       (SELECT COUNT(*) FROM sites WHERE project_id=pr.id AND active=1) AS site_count
     FROM projects pr WHERE ${scopeWhere(req.user)} ORDER BY total_qty DESC`).all();
   res.json(rows.map((r) => ({ ...r, active: !!r.active, total_qty: round3(r.total_qty) })));
@@ -28,14 +34,16 @@ router.get('/:id', h((req, res) => {
   if (!canAccessProject(req.user, req.params.id)) httpError(403, 'That project is not assigned to you');
   const pr = db.prepare('SELECT * FROM projects WHERE id=?').get(req.params.id);
   if (!pr) httpError(404, 'Project not found');
+  // Managers see only the materials they personally issued to this project.
+  const f = req.user.role === 'manager' ? ` AND t.user_id = ${Number(req.user.id)}` : '';
   const byProduct = db.prepare(
     `SELECT p.name AS product, p.unit AS unit, p.unit_price AS unit_price,
             COALESCE(SUM(t.qty_issued),0) AS qty, COUNT(*) AS n
      FROM transactions t JOIN products p ON p.id=t.product_id
-     WHERE t.project_id=? AND t.voided=0 AND t.kind='issue'
+     WHERE t.project_id=? AND t.voided=0 AND t.kind='issue'${f}
      GROUP BY p.id ORDER BY qty DESC`).all(req.params.id);
   const txns = db.prepare(
-    `${TXN_SELECT} WHERE t.project_id=? AND t.voided=0 ORDER BY t.txn_date DESC, t.id DESC LIMIT 300`).all(req.params.id);
+    `${TXN_SELECT} WHERE t.project_id=? AND t.voided=0${f} ORDER BY t.txn_date DESC, t.id DESC LIMIT 300`).all(req.params.id);
   const sites = db.prepare('SELECT * FROM sites WHERE project_id=? ORDER BY name').all(req.params.id);
   const cost = round3(byProduct.reduce((s, r) => s + (r.unit_price ? r.qty * r.unit_price : 0), 0));
   res.json({

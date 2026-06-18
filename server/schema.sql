@@ -161,3 +161,22 @@ CREATE TABLE IF NOT EXISTS batteries (
   created_by      INTEGER REFERENCES users(id),
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Append-only audit trail. Decommissioned batteries leave `batteries` but stay here
+-- forever (snapshot of serial/vehicle/photo), so the active register only ever holds
+-- one live battery per vehicle while history is preserved for audit.
+CREATE TABLE IF NOT EXISTS battery_events (
+  id              INTEGER PRIMARY KEY,
+  battery_id      INTEGER,                  -- active battery id at event time (may be gone)
+  action          TEXT NOT NULL CHECK (action IN ('add','transfer','decommission','edit')),
+  serial_no       TEXT,
+  serial_no_norm  TEXT,
+  vehicle_no      TEXT,                     -- vehicle after the event (to-vehicle for transfer)
+  from_vehicle_no TEXT,                     -- vehicle before a transfer/edit
+  reason          TEXT,
+  photo_path      TEXT,
+  user_id         INTEGER REFERENCES users(id),
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_battery_events_serial ON battery_events(serial_no_norm);
+CREATE INDEX IF NOT EXISTS idx_battery_events_battery ON battery_events(battery_id);
