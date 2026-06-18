@@ -22,7 +22,7 @@ router.get('/', h((req, res) => {
   const w = where.join(' AND ');
   const total = db.prepare(`SELECT COUNT(*) AS n FROM transactions t WHERE ${w}`).get(args).n;
   const rows = db.prepare(
-    `${TXN_SELECT} WHERE ${w} ORDER BY t.id DESC LIMIT @limit OFFSET @offset`
+    `${TXN_SELECT} WHERE ${w} ORDER BY t.txn_date DESC, t.id DESC LIMIT @limit OFFSET @offset`
   ).all({ ...args, limit, offset });
   res.json({ total, rows: rows.map(decorate) });
 }));

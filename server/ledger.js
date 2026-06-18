@@ -6,7 +6,7 @@ import { round3 } from '../scripts/lib.js';
 const selectRows = db.prepare(
   `SELECT id, qty_received, qty_issued FROM transactions
    WHERE product_id = ? AND voided = 0
-   ORDER BY id ASC`
+   ORDER BY txn_date ASC, id ASC`
 );
 const updateBalance = db.prepare('UPDATE transactions SET balance_after = ? WHERE id = ?');
 
@@ -26,7 +26,7 @@ export function currentBalance(productId) {
     .prepare(
       `SELECT balance_after FROM transactions
        WHERE product_id = ? AND voided = 0
-       ORDER BY id DESC LIMIT 1`
+       ORDER BY txn_date DESC, id DESC LIMIT 1`
     )
     .get(productId);
   return row ? row.balance_after : 0;

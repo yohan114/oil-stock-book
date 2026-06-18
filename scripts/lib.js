@@ -36,6 +36,9 @@ export function resolveDate(raw, prevISO) {
     const t = Date.parse(raw);
     if (!isNaN(t)) iso = new Date(t).toISOString().slice(0, 10);
   }
+  if (iso && iso > '2026-06-12') {
+    iso = '2025' + iso.slice(4);
+  }
   if (iso && iso >= DATE_MIN && iso <= DATE_MAX) return { iso, bad: false };
   return { iso: prevISO || iso || '2025-06-01', bad: true };
 }

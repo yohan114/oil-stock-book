@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { db, ROOT, hasData } from './db.js';
+import { startBackupScheduler } from './backup.js';
 
 import products from './routes/products.js';
 import transactions from './routes/transactions.js';
@@ -26,6 +27,9 @@ if (!hasData()) {
     console.warn('No data found. Add the Excel files to data/source/ and run `npm run import`.');
   }
 }
+
+// Start daily backup scheduler
+startBackupScheduler();
 
 const app = express();
 app.use(express.json());

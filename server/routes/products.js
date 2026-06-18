@@ -43,7 +43,7 @@ router.get('/:id', h((req, res) => {
 }));
 
 router.get('/:id/ledger', h((req, res) => {
-  const rows = db.prepare(`${TXN_SELECT} WHERE t.product_id=? AND t.voided=0 ORDER BY t.id ASC`).all(req.params.id);
+  const rows = db.prepare(`${TXN_SELECT} WHERE t.product_id=? AND t.voided=0 ORDER BY t.txn_date ASC, t.id ASC`).all(req.params.id);
   res.json(rows.map(decorate));
 }));
 

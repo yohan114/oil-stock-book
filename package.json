@@ -13,7 +13,6 @@
     "dev": "concurrently -n server,client -c blue,green \"node --watch server/index.js\" \"npm --prefix client run dev\""
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.1",
     "express": "^4.21.2",
     "xlsx": "^0.18.5"
   },

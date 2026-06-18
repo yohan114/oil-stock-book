@@ -263,7 +263,7 @@ function summeryCrossCheck(stockWb) {
   if (hdr < 0) return [];
   const products = db.prepare('SELECT id, name FROM products').all().map((p) => ({ ...p, norm: normalize(p.name) }));
   const balOf = db.prepare(
-    `SELECT balance_after FROM transactions WHERE product_id=? AND voided=0 ORDER BY id DESC LIMIT 1`);
+    `SELECT balance_after FROM transactions WHERE product_id=? AND voided=0 ORDER BY txn_date DESC, id DESC LIMIT 1`);
   const diffs = [];
   for (let i = hdr + 1; i < rows.length; i++) {
     const item = str(rows[i][itemCol]);
