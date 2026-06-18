@@ -24,7 +24,18 @@ export const CATEGORY = {
   gear_oil: 'Gear Oil',
   grease: 'Grease',
   fuel: 'Fuel',
+  coolant: 'Coolant',
+  filter: 'Filter',
+  spare_part: 'Spare Part',
+  tyre: 'Tyre / Tube',
+  battery: 'Battery',
+  consumable: 'Consumable',
   other: 'Other',
 };
+
+export const categoryLabel = (c) => CATEGORY[c] || c || 'Uncategorised';
+
+// Common units of measure for general materials.
+export const UNITS = ['L', 'kg', 'pcs', 'set', 'box', 'can', 'drum', 'm', 'roll', 'pair'];
 
 export const CHART_COLORS = ['#2563eb', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];

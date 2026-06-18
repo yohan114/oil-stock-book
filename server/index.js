@@ -4,7 +4,11 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { db, ROOT, hasData } from './db.js';
 import { startBackupScheduler } from './backup.js';
+import { authenticate, seedAdmin } from './auth.js';
+import { UPLOADS_DIR } from './uploads.js';
 
+import auth from './routes/auth.js';
+import users from './routes/users.js';
 import products from './routes/products.js';
 import transactions from './routes/transactions.js';
 import assets from './routes/assets.js';
@@ -12,6 +16,8 @@ import projects from './routes/projects.js';
 import analytics from './routes/analytics.js';
 import aliases from './routes/aliases.js';
 import settings from './routes/settings.js';
+import batteries from './routes/batteries.js';
+import tally from './routes/tally.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -28,21 +34,35 @@ if (!hasData()) {
   }
 }
 
+// Ensure there is always at least one (admin) login.
+seedAdmin();
+
 // Start daily backup scheduler
 startBackupScheduler();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '20mb' })); // room for base64 battery photos
 
+// Battery photos & other uploads (served openly — LAN app).
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+app.get('/api/health', (req, res) => res.json({ ok: true, products: db.prepare('SELECT COUNT(*) n FROM products').get().n }));
+
+// Public auth endpoints (login). /me, /logout, /password authenticate per-route.
+app.use('/api/auth', auth);
+
+// Everything below requires a valid session.
+app.use('/api', authenticate);
+app.use('/api/users', users);
 app.use('/api/products', products);
 app.use('/api/transactions', transactions);
 app.use('/api/assets', assets);
 app.use('/api/projects', projects);
 app.use('/api/aliases', aliases);
 app.use('/api/settings', settings);
+app.use('/api/batteries', batteries);
+app.use('/api/tally', tally);
 app.use('/api', analytics); // /api/dashboard/*, /api/trends/*, /api/forecast, /api/consumption/*
-
-app.get('/api/health', (req, res) => res.json({ ok: true, products: db.prepare('SELECT COUNT(*) n FROM products').get().n }));
 
 // Serve the built client (production) with SPA fallback.
 const dist = path.join(ROOT, 'client', 'dist');

@@ -92,3 +92,72 @@ CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT
 );
+
+-- ── v2: users, roles & sessions ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY,
+  username      TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  full_name     TEXT,
+  role          TEXT NOT NULL DEFAULT 'manager' CHECK (role IN ('admin','storekeeper','manager')),
+  active        INTEGER NOT NULL DEFAULT 1,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Which projects a (manager) user may issue to / see. Admin & storekeeper see all.
+CREATE TABLE IF NOT EXISTS user_projects (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, project_id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+-- ── v2: sites under a project ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sites (
+  id         INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  name_norm  TEXT NOT NULL,
+  active     INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (project_id, name_norm)
+);
+CREATE INDEX IF NOT EXISTS idx_sites_project ON sites(project_id);
+
+-- ── v2: month-end physical stock count / reconciliation ───────────────────────
+CREATE TABLE IF NOT EXISTS stock_counts (
+  id           INTEGER PRIMARY KEY,
+  product_id   INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  period       TEXT NOT NULL,                       -- 'YYYY-MM' the count closes
+  book_qty     REAL NOT NULL DEFAULT 0,             -- system balance at period end
+  counted_qty  REAL NOT NULL DEFAULT 0,             -- physical count
+  variance     REAL NOT NULL DEFAULT 0,             -- counted - book
+  adjusted     INTEGER NOT NULL DEFAULT 0,          -- 1 if an adjustment txn was posted
+  note         TEXT,
+  counted_by   INTEGER REFERENCES users(id),
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (product_id, period)
+);
+CREATE INDEX IF NOT EXISTS idx_counts_period ON stock_counts(period);
+
+-- ── v2: battery register (one battery per vehicle, both unique) ───────────────
+CREATE TABLE IF NOT EXISTS batteries (
+  id              INTEGER PRIMARY KEY,
+  vehicle_no      TEXT NOT NULL,
+  vehicle_no_norm TEXT NOT NULL UNIQUE,
+  serial_no       TEXT NOT NULL,
+  serial_no_norm  TEXT NOT NULL UNIQUE,
+  note            TEXT,
+  photo_path      TEXT NOT NULL,
+  created_by      INTEGER REFERENCES users(id),
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);

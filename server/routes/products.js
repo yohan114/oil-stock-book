@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { currentBalance } from '../ledger.js';
-import { h, TXN_SELECT, decorate, round3 } from '../util.js';
+import { h, httpError, TXN_SELECT, decorate, round3 } from '../util.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -47,7 +48,37 @@ router.get('/:id/ledger', h((req, res) => {
   res.json(rows.map(decorate));
 }));
 
-router.patch('/:id', h((req, res) => {
+router.post('/', requireRole('admin', 'storekeeper'), h((req, res) => {
+  const name = String(req.body.name || '').trim();
+  if (!name) httpError(400, 'Product name is required');
+  if (db.prepare('SELECT 1 FROM products WHERE lower(name)=lower(?)').get(name)) {
+    httpError(409, 'A product with that name already exists');
+  }
+  const nextOrder = (db.prepare('SELECT MAX(sort_order) AS m FROM products').get().m || 0) + 1;
+  const info = db.prepare(`
+    INSERT INTO products (name, unit, category, reorder_level, unit_price, sort_order)
+    VALUES (@name, @unit, @category, @reorder_level, @unit_price, @sort_order)`).run({
+    name,
+    unit: String(req.body.unit || 'L').trim() || 'L',
+    category: req.body.category || null,
+    reorder_level: req.body.reorder_level != null && req.body.reorder_level !== '' ? Number(req.body.reorder_level) : null,
+    unit_price: req.body.unit_price != null && req.body.unit_price !== '' ? Number(req.body.unit_price) : null,
+    sort_order: nextOrder,
+  });
+  const p = db.prepare('SELECT * FROM products WHERE id=?').get(info.lastInsertRowid);
+
+  // Optional opening stock as a first receipt.
+  const opening = Number(req.body.opening_qty) || 0;
+  if (opening > 0) {
+    db.prepare(`INSERT INTO transactions
+      (product_id, txn_date, kind, qty_received, qty_issued, balance_after, user_id, description, source)
+      VALUES (?, date('now'), 'opening', ?, 0, ?, ?, 'Opening balance', 'manual')`)
+      .run(p.id, round3(opening), round3(opening), req.user.id);
+  }
+  res.status(201).json(enrich(p));
+}));
+
+router.patch('/:id', requireRole('admin', 'storekeeper'), h((req, res) => {
   const fields = ['name', 'unit', 'category', 'reorder_level', 'unit_price', 'active'];
   const sets = [], vals = [];
   for (const f of fields) {

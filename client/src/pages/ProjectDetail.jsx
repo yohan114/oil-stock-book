@@ -1,14 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { useApi } from '../api.js';
-import { Spinner, ErrorMsg, Stat, Icon, Empty } from '../components/ui.jsx';
+import { api, useApi } from '../api.js';
+import { useAuth } from '../auth.jsx';
+import { Spinner, ErrorMsg, Stat, Icon, Empty, Pill } from '../components/ui.jsx';
 import IssueTimeline from '../components/IssueTimeline.jsx';
 import { qty, money, date } from '../lib/format.js';
 
 export default function ProjectDetail() {
   const { id } = useParams();
-  const { data, loading, error } = useApi(`/projects/${id}`);
+  const { user } = useAuth();
+  const staff = user.role === 'admin' || user.role === 'storekeeper';
+  const { data, loading, error, reload } = useApi(`/projects/${id}`);
   const { data: settings } = useApi('/settings');
 
   const monthly = useMemo(() => {
@@ -23,7 +26,7 @@ export default function ProjectDetail() {
 
   if (loading) return <Spinner />;
   if (error) return <ErrorMsg error={error} />;
-  const { project, by_product, cost, transactions } = data;
+  const { project, by_product, cost, transactions, sites = [] } = data;
   const sym = settings?.currency_symbol || 'Rs.';
   const totalOil = by_product.reduce((s, b) => s + b.qty, 0);
   const dates = transactions.map((t) => t.txn_date).filter(Boolean).sort();
@@ -79,10 +82,48 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      <Sites projectId={id} sites={sites} staff={staff} onChange={reload} />
+
       <div className="card p-5">
         <h2 className="font-bold text-ink mb-4">Issues by date</h2>
         <IssueTimeline issues={transactions} emptyText="No issues recorded for this project." />
       </div>
+    </div>
+  );
+}
+
+function Sites({ projectId, sites, staff, onChange }) {
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  async function add(e) {
+    e.preventDefault();
+    setErr(null);
+    if (!name.trim()) return;
+    setBusy(true);
+    try { await api.post(`/projects/${projectId}/sites`, { name: name.trim() }); setName(''); onChange?.(); }
+    catch (e2) { setErr(e2.message); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold text-ink">Sites</h2>
+        <span className="text-xs text-slate-400">{sites.length} location{sites.length === 1 ? '' : 's'}</span>
+      </div>
+      {!sites.length ? <Empty>No sites added. Stock can still be issued to the whole project.</Empty> : (
+        <div className="flex flex-wrap gap-2">
+          {sites.map((s) => <Pill key={s.id} className="bg-slate-100 text-slate-700"><Icon name="map" className="w-3.5 h-3.5" /> {s.name}</Pill>)}
+        </div>
+      )}
+      {staff && (
+        <form onSubmit={add} className="mt-4 flex flex-wrap items-center gap-2">
+          <input className="input max-w-xs" value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a site / location…" />
+          <button className="btn-primary" disabled={busy}>{busy ? 'Adding…' : 'Add site'}</button>
+          {err && <span className="text-sm text-rose-600">⚠ {err}</span>}
+        </form>
+      )}
     </div>
   );
 }

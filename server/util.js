@@ -1,10 +1,19 @@
 import { db } from './db.js';
 import { PROJECTS, classifyConsumer, normalize, round3 } from '../scripts/lib.js';
 
+/** Throw an HTTP error with a specific status code (caught by `h`). */
+export function httpError(status, message) {
+  throw Object.assign(new Error(message), { status });
+}
+
 /** Wrap a synchronous route handler with error handling. */
 export const h = (fn) => (req, res) => {
   try { fn(req, res); }
-  catch (err) { console.error(err); res.status(500).json({ error: String(err.message || err) }); }
+  catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error(err);
+    res.status(status).json({ error: String(err.message || err) });
+  }
 };
 
 /** Build the in-memory lookup context used to auto-classify a consumer from free text. */
@@ -32,7 +41,7 @@ export function consumerLabel(row) {
   if (row.asset_ec || row.asset_reg) {
     return [row.asset_ec, row.asset_reg].filter(Boolean).join(' / ');
   }
-  if (row.project_name) return row.project_name;
+  if (row.project_name) return row.site_name ? `${row.project_name} · ${row.site_name}` : row.project_name;
   if (row.consumer_type === 'internal') return row.description || 'Internal';
   return row.description || '—';
 }
@@ -40,11 +49,14 @@ export function consumerLabel(row) {
 export const TXN_SELECT = `
   SELECT t.*, p.name AS product_name, p.unit AS unit, p.category AS category,
          a.ec_code AS asset_ec, a.registration AS asset_reg, a.type AS asset_type, a.brand AS asset_brand,
-         pr.name AS project_name
+         pr.name AS project_name, s.name AS site_name,
+         u.full_name AS user_name, u.username AS username
   FROM transactions t
   JOIN products p ON p.id = t.product_id
   LEFT JOIN fleet_assets a ON a.id = t.asset_id
-  LEFT JOIN projects pr ON pr.id = t.project_id`;
+  LEFT JOIN projects pr ON pr.id = t.project_id
+  LEFT JOIN sites s ON s.id = t.site_id
+  LEFT JOIN users u ON u.id = t.user_id`;
 
 export function decorate(row) {
   return { ...row, consumer_label: consumerLabel(row), voided: !!row.voided };
