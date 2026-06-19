@@ -8,9 +8,15 @@ import { useAuth } from '../auth.jsx';
 import { Stat, Spinner, ErrorMsg, StatusBadge, Icon, Empty } from '../components/ui.jsx';
 import TransactionForm from '../components/TransactionForm.jsx';
 import ProductForm from '../components/ProductForm.jsx';
+import ManagerDashboard from './ManagerDashboard.jsx';
 import { qty, fmt, money, CHART_COLORS } from '../lib/format.js';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  return user.role === 'manager' ? <ManagerDashboard /> : <StaffDashboard />;
+}
+
+function StaffDashboard() {
   const { user } = useAuth();
   const staff = user.role === 'admin' || user.role === 'storekeeper';
   const { data, error, loading, reload } = useApi('/dashboard/stock');

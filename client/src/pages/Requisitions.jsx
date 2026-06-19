@@ -160,12 +160,13 @@ function CreateForm({ staff, onClose, onSaved }) {
             <label className="label">Product</label>
             <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)}>
               <option value="">Select…</option>
-              {products?.map((p) => <option key={p.id} value={p.id}>{p.name}{staff ? ` — ${qty(p.balance, p.unit)} in stock` : ''}</option>)}
+              {products?.map((p) => <option key={p.id} value={p.id}>{p.name} — {qty(p.balance, p.unit)} in main store</option>)}
             </select>
           </div>
           <div>
             <label className="label">Quantity {product ? `(${product.unit})` : ''}</label>
             <input type="number" step="0.01" min="0" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            {product && <p className="text-[11px] text-slate-400 mt-1">Main store: <b className="text-slate-600">{qty(product.balance, product.unit)}</b> available</p>}
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
