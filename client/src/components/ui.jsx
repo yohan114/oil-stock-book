@@ -24,6 +24,9 @@ const PATHS = {
   camera: 'M3 7h3l2-2h8l2 2h3a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1zm9 4a3.5 3.5 0 100 7 3.5 3.5 0 000-7z',
   trash: 'M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6',
   user: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z',
+  inbox: 'M22 12h-6l-2 3h-4l-2-3H2M5 5h14l3 7v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6l3-7z',
+  send: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+  check: 'M20 6L9 17l-5-5',
 };
 
 export function Icon({ name, className = 'w-5 h-5' }) {

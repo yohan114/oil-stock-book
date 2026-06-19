@@ -180,3 +180,31 @@ CREATE TABLE IF NOT EXISTS battery_events (
 );
 CREATE INDEX IF NOT EXISTS idx_battery_events_serial ON battery_events(serial_no_norm);
 CREATE INDEX IF NOT EXISTS idx_battery_events_battery ON battery_events(battery_id);
+
+-- ── v2: material requisitions / dispatches (request → approve → send → receive) ─
+-- A site requests lubricant; the store keeper approves & sends (stock leaves the
+-- store here); the site manager then confirms the quantity actually received.
+CREATE TABLE IF NOT EXISTS requisitions (
+  id            INTEGER PRIMARY KEY,
+  product_id    INTEGER NOT NULL REFERENCES products(id),
+  project_id    INTEGER REFERENCES projects(id),
+  site_id       INTEGER REFERENCES sites(id),
+  qty_requested REAL,
+  qty_sent      REAL,
+  qty_received  REAL,
+  status        TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending','sent','received','rejected','cancelled')),
+  txn_id        INTEGER REFERENCES transactions(id),   -- the issue posted on send
+  note          TEXT,
+  reject_reason TEXT,
+  discrepancy   INTEGER NOT NULL DEFAULT 0,             -- 1 if received <> sent
+  requested_by  INTEGER REFERENCES users(id),
+  approved_by   INTEGER REFERENCES users(id),
+  received_by   INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  sent_at       TEXT,
+  received_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_req_status ON requisitions(status);
+CREATE INDEX IF NOT EXISTS idx_req_project ON requisitions(project_id);

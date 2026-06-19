@@ -17,6 +17,7 @@ import Report from './pages/Report.jsx';
 import Batteries from './pages/Batteries.jsx';
 import StockTake from './pages/StockTake.jsx';
 import Users from './pages/Users.jsx';
+import Requisitions from './pages/Requisitions.jsx';
 
 function Gate() {
   const { user, ready } = useAuth();
@@ -40,6 +41,7 @@ function Gate() {
               <Route path="/machines/:id" element={<AssetDetail />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
+              <Route path="/requisitions" element={<Requisitions />} />
               <Route path="/batteries" element={<Batteries />} />
               {staff && <Route path="/stock-take" element={<StockTake />} />}
               {staff && <Route path="/trends" element={<Trends />} />}

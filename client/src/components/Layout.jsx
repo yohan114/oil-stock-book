@@ -8,6 +8,7 @@ import { Icon } from './ui.jsx';
 const NAV = [
   { to: '/', icon: 'dashboard', label: 'Dashboard', end: true, roles: ['admin', 'storekeeper', 'manager'] },
   { to: '/ledger', icon: 'ledger', label: 'Stock Ledger', roles: ['admin', 'storekeeper'] },
+  { to: '/requisitions', icon: 'inbox', label: 'Requisitions', roles: ['admin', 'storekeeper', 'manager'] },
   { to: '/batteries', icon: 'battery', label: 'Battery Stock', roles: ['admin', 'storekeeper', 'manager'] },
   { to: '/machines', icon: 'machine', label: 'Machines', roles: ['admin', 'storekeeper'] },
   { to: '/projects', icon: 'project', label: 'Projects', roles: ['admin', 'storekeeper', 'manager'] },
@@ -24,8 +25,12 @@ export default function Layout({ children }) {
   const { data: stock } = useApi('/dashboard/stock');
   const staff = user.role === 'admin' || user.role === 'storekeeper';
   const { data: overdue } = useApi(staff ? '/tally/overdue' : null);
+  const { data: reqSummary } = useApi('/requisitions/summary');
   const loc = useLocation();
   const [open, setOpen] = useState(false);
+
+  // SK/admin act on pending requests; managers confirm receipt of sent dispatches.
+  const reqBadge = staff ? (reqSummary?.pending ?? 0) : (reqSummary?.awaiting_receipt ?? 0);
 
   const lowCount = stock?.totals?.low_stock ?? 0;
   const unresolved = stock?.totals?.unresolved_aliases ?? 0;
@@ -61,6 +66,9 @@ export default function Layout({ children }) {
               <span>{n.label}</span>
               {n.to === '/mapping' && unresolved > 0 && (
                 <span className="ml-auto text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold">{unresolved}</span>
+              )}
+              {n.to === '/requisitions' && reqBadge > 0 && (
+                <span className="ml-auto text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold">{reqBadge}</span>
               )}
               {n.to === '/stock-take' && overdue?.overdue && (
                 <span className="ml-auto text-[10px] bg-rose-500 text-white rounded-full px-1.5 py-0.5 font-bold">!</span>

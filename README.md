@@ -30,7 +30,8 @@ reconciles **exactly** to the original book.
 - **Issue only what is in stock** — the server refuses any issue (or edit/void) that would drive a product's book balance negative.
 - **Projects & sites** — create projects from the UI and add **sites** (locations) under each; issues can be tagged to a project *and* a site.
 - **Month-end stock take** — record the physical count per product, see the variance vs the book balance, and optionally post an adjustment so the book matches reality. If the previous month's count is not done within **7 days of month-end**, a **red overdue notice** appears across the app.
-- **Battery register** — one battery per vehicle: vehicle number + serial number (each unique, never repeated) with a **mandatory photo** (camera capture supported on phones, auto-resized before upload).
+- **Battery register** — one battery per vehicle: vehicle number + serial number (each unique, never repeated) with a **mandatory photo** (camera capture supported on phones, auto-resized before upload). Batteries are never deleted — **transfer**, **mark-dead** and **edit** are recorded in an append-only audit history.
+- **Material requisitions** — a site **requests** lubricant → the store keeper **approves & sends** (stock leaves the store here, with the over-issue check) → the **site manager confirms** the quantity received, and any shortfall is flagged as a discrepancy. Store keepers can also dispatch directly to a site for confirmation. Project managers request and confirm; they no longer move stock directly.
 - **Mobile-friendly** — responsive layout with an off-canvas sidebar; works on phones in the field.
 
 | Trends & forecast | Record movement |
@@ -110,7 +111,8 @@ oil-stock-book/
 | Transactions | `GET /transactions`, `POST /transactions`, `PATCH /transactions/:id`, `POST /transactions/:id/void` |
 | Fleet | `GET /assets?search=`, `GET /assets/:id`, `GET /assets/types` |
 | Projects & sites | `GET /projects`, `GET /projects/:id`, `POST /projects`, `GET /projects/:id/sites`, `POST /projects/:id/sites` |
-| Batteries | `GET /batteries?search=`, `POST /batteries`, `DELETE /batteries/:id` |
+| Batteries | `GET /batteries?search=`, `GET /batteries/history`, `POST /batteries`, `POST /batteries/:id/transfer`, `POST /batteries/:id/decommission`, `PATCH /batteries/:id` |
+| Requisitions | `GET /requisitions`, `GET /requisitions/summary`, `POST /requisitions`, `POST /requisitions/:id/approve`, `/reject`, `/receive`, `/cancel` |
 | Stock take | `GET /tally/status?period=YYYY-MM`, `GET /tally/overdue`, `POST /tally` |
 | Monitoring | `GET /dashboard/stock`, `GET /dashboard/alerts`, `GET /forecast`, `GET /consumption/by-asset`, `GET /consumption/by-project`, `GET /trends/monthly`, `GET /trends/top-consumers` |
 | Mapping | `GET /aliases`, `POST /aliases/:id/resolve` |

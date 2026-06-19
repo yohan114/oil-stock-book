@@ -18,6 +18,7 @@ import aliases from './routes/aliases.js';
 import settings from './routes/settings.js';
 import batteries from './routes/batteries.js';
 import tally from './routes/tally.js';
+import requisitions from './routes/requisitions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,7 @@ app.use('/api/aliases', aliases);
 app.use('/api/settings', settings);
 app.use('/api/batteries', batteries);
 app.use('/api/tally', tally);
+app.use('/api/requisitions', requisitions);
 app.use('/api', analytics); // /api/dashboard/*, /api/trends/*, /api/forecast, /api/consumption/*
 
 // Serve the built client (production) with SPA fallback.

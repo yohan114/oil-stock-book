@@ -33,7 +33,9 @@ export default function Dashboard() {
         <p className="text-slate-500 text-sm">Live overview of fuel &amp; lubricant stock, alerts and consumption.</p>
         <div className="flex items-center gap-2">
           {staff && <button className="btn-ghost" onClick={() => setShowProduct(true)}><Icon name="plus" className="w-4 h-4" /> Add product</button>}
-          <button className="btn-primary" onClick={() => setShowForm(true)}><Icon name="plus" className="w-4 h-4" /> {staff ? 'Record movement' : 'Issue stock'}</button>
+          {staff
+            ? <button className="btn-primary" onClick={() => setShowForm(true)}><Icon name="plus" className="w-4 h-4" /> Record movement</button>
+            : <Link to="/requisitions" className="btn-primary"><Icon name="inbox" className="w-4 h-4" /> Request material</Link>}
         </div>
       </div>
 

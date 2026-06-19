@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { recomputeLedger, currentBalance } from '../ledger.js';
 import { h, httpError, TXN_SELECT, decorate, classifyText, round3 } from '../util.js';
-import { canAccessProject } from '../auth.js';
 
 const router = Router();
 
@@ -55,11 +54,10 @@ router.post('/', h((req, res) => {
     project_id = site.project_id;
   }
 
-  // Project managers may only issue, and only to their own projects.
+  // Project managers cannot move stock directly — they raise a material request
+  // and the store keeper approves & sends it (see /api/requisitions).
   if (req.user.role === 'manager') {
-    if (b.kind !== 'issue') httpError(403, 'Project managers can only issue stock');
-    if (!project_id) httpError(400, 'Select one of your projects to issue to');
-    if (!canAccessProject(req.user, project_id)) httpError(403, 'That project is not assigned to you');
+    httpError(403, 'Project managers request materials — the store keeper approves and sends. Use Requisitions.');
   }
 
   if (b.kind === 'issue' && !asset_id && !project_id && consumer_type == null && b.description) {
