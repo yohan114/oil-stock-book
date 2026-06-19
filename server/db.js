@@ -32,6 +32,20 @@ db.transaction = function (fn) {
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+// ── Lightweight migrations: add columns to existing tables when missing ───────
+function columns(table) {
+  return new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
+}
+function addColumn(table, name, ddl) {
+  if (!columns(table).has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+// Attribution + site link on transactions (v2).
+addColumn('transactions', 'user_id', 'user_id INTEGER REFERENCES users(id)');
+addColumn('transactions', 'site_id', 'site_id INTEGER REFERENCES sites(id)');
+// On-the-fly vehicle registration (v2).
+addColumn('fleet_assets', 'status', "status TEXT NOT NULL DEFAULT 'registered'");
+addColumn('fleet_assets', 'created_by', 'created_by INTEGER REFERENCES users(id)');
+
 // Seed default settings once.
 const DEFAULT_SETTINGS = {
   company_name: 'Edward & Christie (Pvt) Ltd',

@@ -23,9 +23,23 @@ reconciles **exactly** to the original book.
 - **Trends & forecast** — monthly received-vs-issued charts, top consumers, and a projected **run-out date** per product at the current burn rate.
 - **Printable stock book** — official-looking, per-product ledger with company header and signature lines (Print / Save as PDF).
 
+### ✨ New in v2
+
+- **Login, users & roles** — three roles: **Admin** (everything), **Store Keeper** (receive / issue / stock-take / manage products), and **Project Manager** (issues stock to their assigned projects only). Every movement records *who* made it.
+- **Add any product / material** — not just oil: add new oil & lubricant brands/models, filters, spares, tyres, consumables… with category, unit, reorder level and price. Optional opening stock.
+- **Issue only what is in stock** — the server refuses any issue (or edit/void) that would drive a product's book balance negative.
+- **Projects & sites** — create projects from the UI and add **sites** (locations) under each; issues can be tagged to a project *and* a site.
+- **Month-end stock take** — record the physical count per product, see the variance vs the book balance, and optionally post an adjustment so the book matches reality. If the previous month's count is not done within **7 days of month-end**, a **red overdue notice** appears across the app.
+- **Battery register** — one battery per vehicle: vehicle number + serial number (each unique, never repeated) with a **mandatory photo** (camera capture supported on phones, auto-resized before upload). Batteries are never deleted — **transfer**, **mark-dead** and **edit** are recorded in an append-only audit history.
+- **Material requisitions** — a site **requests** lubricant → the store keeper **approves & sends** (stock leaves the store here, with the over-issue check) → the **site manager confirms** the quantity received, and any shortfall is flagged as a discrepancy. Store keepers can also dispatch directly to a site for confirmation. Project managers request and confirm; they no longer move stock directly.
+- **On-the-fly vehicle registration** — issuing to a machine/vehicle that isn't in the fleet yet? Add it inline from the issue form. It's saved as **pending registration**, the admin is flagged (sidebar badge + banner: "new vehicle detected — complete registration"), and the issue history carries over once the details are filled in.
+- **Mobile-friendly** — responsive layout with an off-canvas sidebar; works on phones in the field.
+
 | Trends & forecast | Record movement |
 |---|---|
 | ![Trends](docs/screenshots/trends.png) | ![Entry](docs/screenshots/modal.png) |
+
+> **First login:** a default admin is seeded on first run — **username `admin`, password `admin123`**. Change it immediately in **Settings → Change my password**, and add your real users under **Users**.
 
 ---
 
@@ -74,13 +88,16 @@ oil-stock-book/
 │   ├── import.js       # ETL: parse sheets, classify consumers, reconcile balances
 │   └── lib.js          # shared normalise() / date parsing / classification rules
 ├── server/
-│   ├── index.js        # Express bootstrap, static serving, first-run auto-import
-│   ├── db.js           # SQLite connection + schema + settings
-│   ├── schema.sql      # data model
+│   ├── index.js        # Express bootstrap, auth gate, static serving, first-run auto-import
+│   ├── db.js           # SQLite connection + schema + lightweight migrations + settings
+│   ├── schema.sql      # data model (products, txns, projects, sites, users, batteries, stock_counts…)
+│   ├── auth.js         # scrypt hashing, sessions, role middleware, admin seed
+│   ├── uploads.js      # base64 image → disk helper (battery photos)
 │   ├── ledger.js       # recomputeLedger() — single source of truth for balances
 │   ├── util.js         # consumer classification + query helpers
-│   └── routes/         # products, transactions, assets, projects, analytics, aliases, settings
-└── client/             # Vite + React app (pages/ + components/)
+│   └── routes/         # auth, users, products, transactions, assets, projects,
+│                       #   batteries, tally, analytics, aliases, settings
+└── client/             # Vite + React app (pages/ + components/, with auth context)
 ```
 
 ---
@@ -89,13 +106,21 @@ oil-stock-book/
 
 | Area | Endpoints |
 |---|---|
-| Products | `GET /products`, `GET /products/:id`, `PATCH /products/:id`, `GET /products/:id/ledger` |
+| Auth | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password` |
+| Users *(admin)* | `GET /users`, `POST /users`, `PATCH /users/:id`, `DELETE /users/:id` |
+| Products | `GET /products`, `POST /products`, `GET /products/:id`, `PATCH /products/:id`, `GET /products/:id/ledger` |
 | Transactions | `GET /transactions`, `POST /transactions`, `PATCH /transactions/:id`, `POST /transactions/:id/void` |
-| Fleet | `GET /assets?search=`, `GET /assets/:id`, `GET /assets/types` |
-| Projects | `GET /projects`, `GET /projects/:id`, `POST /projects` |
+| Fleet | `GET /assets?search=&status=`, `GET /assets/:id`, `GET /assets/types`, `POST /assets`, `PATCH /assets/:id` |
+| Projects & sites | `GET /projects`, `GET /projects/:id`, `POST /projects`, `GET /projects/:id/sites`, `POST /projects/:id/sites` |
+| Batteries | `GET /batteries?search=`, `GET /batteries/history`, `POST /batteries`, `POST /batteries/:id/transfer`, `POST /batteries/:id/decommission`, `PATCH /batteries/:id` |
+| Requisitions | `GET /requisitions`, `GET /requisitions/summary`, `POST /requisitions`, `POST /requisitions/:id/approve`, `/reject`, `/receive`, `/cancel` |
+| Stock take | `GET /tally/status?period=YYYY-MM`, `GET /tally/overdue`, `POST /tally` |
 | Monitoring | `GET /dashboard/stock`, `GET /dashboard/alerts`, `GET /forecast`, `GET /consumption/by-asset`, `GET /consumption/by-project`, `GET /trends/monthly`, `GET /trends/top-consumers` |
 | Mapping | `GET /aliases`, `POST /aliases/:id/resolve` |
 | Settings | `GET /settings`, `PUT /settings` |
+
+All endpoints except `POST /auth/login` and `GET /api/health` require a session token
+(`Authorization: Bearer <token>`); some are further restricted by role.
 
 ---
 
@@ -109,6 +134,9 @@ match to the unit.** Out-of-range dates are tolerated (flagged, never dropped).
 
 ## ⚠️ Notes
 
-- Designed as a single-user local / office-LAN app — there is no authentication.
+- Designed for local / office-LAN use. Logins use salted **scrypt** password hashing
+  (Node's built-in `crypto`) and bearer-token sessions stored in the database — no
+  external auth dependency. Battery photos live in `data/uploads/` (git-ignored, like
+  the database); back these up alongside `data/oilbook.db`.
 - The `xlsx` import library carries a known advisory; it only ever parses the
   organisation's own trusted files at import time, never untrusted uploads at runtime.

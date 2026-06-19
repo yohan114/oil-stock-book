@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { h, normalize } from '../util.js';
+import { requireRole } from '../auth.js';
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get('/', h((req, res) => {
   res.json(rows.map((r) => ({ ...r, resolved: !!r.resolved })));
 }));
 
-router.post('/:id/resolve', h((req, res) => {
+router.post('/:id/resolve', requireRole('admin', 'storekeeper'), h((req, res) => {
   const alias = db.prepare('SELECT * FROM aliases WHERE id=?').get(req.params.id);
   if (!alias) return res.status(404).json({ error: 'Alias not found' });
   let { target_type, asset_id = null, project_id = null, new_project_name } = req.body;

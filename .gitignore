@@ -9,6 +9,7 @@ data/*.db-shm
 .DS_Store
 *.bak
 data/backups/
+data/uploads/
 startup_err.txt
 startup_log.txt
 Fuel & Lubricant (Autosaved).xlsx

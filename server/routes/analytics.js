@@ -39,6 +39,7 @@ router.get('/dashboard/stock', h((req, res) => {
     low_stock: products.filter((p) => p.status === 'critical' || p.status === 'out').length,
     total_value: round3(products.reduce((s, p) => s + (p.value || 0), 0)),
     assets: db.prepare('SELECT COUNT(*) n FROM fleet_assets').get().n,
+    pending_assets: db.prepare("SELECT COUNT(*) n FROM fleet_assets WHERE status='pending'").get().n,
     projects: db.prepare('SELECT COUNT(*) n FROM projects').get().n,
     transactions: db.prepare('SELECT COUNT(*) n FROM transactions WHERE voided=0').get().n,
     unresolved_aliases: db.prepare('SELECT COUNT(*) n FROM aliases WHERE resolved=0').get().n,
@@ -111,7 +112,7 @@ router.get('/consumption/by-asset', h((req, res) => {
   if (req.query.from) where.push(`t.txn_date >= '${req.query.from}'`);
   if (req.query.to) where.push(`t.txn_date <= '${req.query.to}'`);
   const rows = db.prepare(
-    `SELECT a.id, a.ec_code, a.registration, a.type, a.brand,
+    `SELECT a.id, a.ec_code, a.registration, a.type, a.brand, a.status,
             ROUND(SUM(t.qty_issued),3) AS total_qty,
             ROUND(SUM(CASE WHEN p.unit='L' THEN t.qty_issued ELSE 0 END),3) AS oil_qty,
             COUNT(*) AS txn_count, MAX(t.txn_date) AS last_date

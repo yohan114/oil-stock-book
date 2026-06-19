@@ -4,17 +4,28 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Cell,
 } from 'recharts';
 import { useApi } from '../api.js';
+import { useAuth } from '../auth.jsx';
 import { Stat, Spinner, ErrorMsg, StatusBadge, Icon, Empty } from '../components/ui.jsx';
 import TransactionForm from '../components/TransactionForm.jsx';
+import ProductForm from '../components/ProductForm.jsx';
+import ManagerDashboard from './ManagerDashboard.jsx';
 import { qty, fmt, money, CHART_COLORS } from '../lib/format.js';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  return user.role === 'manager' ? <ManagerDashboard /> : <StaffDashboard />;
+}
+
+function StaffDashboard() {
+  const { user } = useAuth();
+  const staff = user.role === 'admin' || user.role === 'storekeeper';
   const { data, error, loading, reload } = useApi('/dashboard/stock');
   const { data: alerts, reload: reloadAlerts } = useApi('/dashboard/alerts');
   const { data: top } = useApi('/trends/top-consumers?metric=asset&limit=6');
   const { data: trend } = useApi('/trends/monthly?months=9');
   const { data: settings } = useApi('/settings');
   const [showForm, setShowForm] = useState(false);
+  const [showProduct, setShowProduct] = useState(false);
 
   if (loading) return <Spinner />;
   if (error) return <ErrorMsg error={error} />;
@@ -24,9 +35,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-slate-500 text-sm">Live overview of fuel &amp; lubricant stock, alerts and consumption.</p>
-        <button className="btn-primary" onClick={() => setShowForm(true)}><Icon name="plus" className="w-4 h-4" /> Record movement</button>
+        <div className="flex items-center gap-2">
+          {staff && <button className="btn-ghost" onClick={() => setShowProduct(true)}><Icon name="plus" className="w-4 h-4" /> Add product</button>}
+          {staff
+            ? <button className="btn-primary" onClick={() => setShowForm(true)}><Icon name="plus" className="w-4 h-4" /> Record movement</button>
+            : <Link to="/requisitions" className="btn-primary"><Icon name="inbox" className="w-4 h-4" /> Request material</Link>}
+        </div>
       </div>
 
       {/* Stat row */}
@@ -138,6 +154,7 @@ export default function Dashboard() {
       </div>
 
       {showForm && <TransactionForm onClose={() => setShowForm(false)} onSaved={refresh} />}
+      {showProduct && <ProductForm onClose={() => setShowProduct(false)} onSaved={refresh} />}
     </div>
   );
 }

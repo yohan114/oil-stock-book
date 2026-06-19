@@ -31,8 +31,8 @@ export default function Ledger() {
 
   async function voidTxn(id) {
     if (!confirm('Void this transaction? Balances will be recalculated.')) return;
-    await api.post(`/transactions/${id}/void`);
-    reload();
+    try { await api.post(`/transactions/${id}/void`); reload(); }
+    catch (e) { alert(e.message); }
   }
 
   return (
