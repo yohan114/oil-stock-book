@@ -161,7 +161,10 @@ export default function TransactionForm({ onClose, onSaved, defaultProductId, de
               {target === 'machine' && (
                 <div>
                   <label className="label">Issued to machine</label>
-                  <AssetCombobox value={asset} onSelect={setAsset} />
+                  <AssetCombobox value={asset} onSelect={setAsset} allowCreate />
+                  {asset?.status === 'pending' && (
+                    <p className="mt-1 text-xs text-amber-600">🆕 New vehicle added — the admin will be asked to complete its registration.</p>
+                  )}
                 </div>
               )}
               {target === 'project' && (

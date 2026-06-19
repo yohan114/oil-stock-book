@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS fleet_assets (
   engine_no          TEXT,
   asset_class        TEXT NOT NULL DEFAULT 'plant',
   site               TEXT,
+  status             TEXT NOT NULL DEFAULT 'registered',  -- 'registered' | 'pending'
+  created_by         INTEGER REFERENCES users(id),
   created_at         TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_assets_ec  ON fleet_assets(ec_code_norm);

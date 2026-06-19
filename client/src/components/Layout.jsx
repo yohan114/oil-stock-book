@@ -34,6 +34,7 @@ export default function Layout({ children }) {
 
   const lowCount = stock?.totals?.low_stock ?? 0;
   const unresolved = stock?.totals?.unresolved_aliases ?? 0;
+  const pendingAssets = stock?.totals?.pending_assets ?? 0;
   const nav = NAV.filter((n) => n.roles.includes(user.role));
 
   return (
@@ -69,6 +70,9 @@ export default function Layout({ children }) {
               )}
               {n.to === '/requisitions' && reqBadge > 0 && (
                 <span className="ml-auto text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold">{reqBadge}</span>
+              )}
+              {n.to === '/machines' && pendingAssets > 0 && (
+                <span className="ml-auto text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold">{pendingAssets}</span>
               )}
               {n.to === '/stock-take' && overdue?.overdue && (
                 <span className="ml-auto text-[10px] bg-rose-500 text-white rounded-full px-1.5 py-0.5 font-bold">!</span>
@@ -112,6 +116,14 @@ export default function Layout({ children }) {
             </div>
           </div>
         </header>
+
+        {/* New-vehicle registration notice */}
+        {staff && pendingAssets > 0 && (
+          <Link to="/machines" className="no-print flex items-center gap-2 bg-amber-500 text-white px-4 sm:px-7 py-2.5 text-sm font-semibold hover:bg-amber-600">
+            <Icon name="machine" className="w-4 h-4 shrink-0" />
+            <span>{pendingAssets} new vehicle/machine{pendingAssets > 1 ? 's' : ''} detected during issuing — please complete registration →</span>
+          </Link>
+        )}
 
         {/* Overdue stock-take notice */}
         {overdue?.overdue && (

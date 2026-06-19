@@ -42,6 +42,9 @@ function addColumn(table, name, ddl) {
 // Attribution + site link on transactions (v2).
 addColumn('transactions', 'user_id', 'user_id INTEGER REFERENCES users(id)');
 addColumn('transactions', 'site_id', 'site_id INTEGER REFERENCES sites(id)');
+// On-the-fly vehicle registration (v2).
+addColumn('fleet_assets', 'status', "status TEXT NOT NULL DEFAULT 'registered'");
+addColumn('fleet_assets', 'created_by', 'created_by INTEGER REFERENCES users(id)');
 
 // Seed default settings once.
 const DEFAULT_SETTINGS = {
